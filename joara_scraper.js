@@ -291,7 +291,7 @@ async function scrapeBook(bookId, waitTime, cooldownChapters, cooldownMinutes) {
                 if (page.isClosed()) {
                     console.log('Page is closed. Reinitializing...');
                     page = await browser.newPage();
-                    await page.goto(chapter.href, { waitUntil: 'networkidle2', timeout: 60000 });
+                    await setupPage(page); // Re-apply user agent and other settings
                 }
 
                 await page.goto(chapter.href, { waitUntil: 'networkidle2', timeout: 60000 });
@@ -343,9 +343,7 @@ async function scrapeBook(bookId, waitTime, cooldownChapters, cooldownMinutes) {
                 }
 
                 // Reload the page and retry
-                await page.goto(chapter.href, { waitUntil: 'networkidle2', timeout: 60000 });
-                await page.waitForSelector('body', { timeout: 30000 });
-                await new Promise((resolve) => setTimeout(resolve, 5000));
+                await page.reload({ waitUntil: 'networkidle2' });
             }
         }
 
