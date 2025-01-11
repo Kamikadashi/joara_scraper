@@ -7,11 +7,10 @@ function displayHelp() {
     console.log('Usage: node joara_scraper.js [options] <bookId1|url1> <bookId2|url2> ...');
     console.log('Options:');
     console.log('  -waitTime <ms>        Wait time in milliseconds between chapters (default: 5000ms)');
-    console.log('  -bookWait <ms>    Wait time in milliseconds between books (default: 0ms)');
     console.log('  -cooldown <n> <m>     After every <n> chapters, cooldown for <m> minutes');
     console.log('  -help                 Display this help message and exit');
     console.log('Example:');
-    console.log('  node joara_scraper.js 12345 -waitTime 3000 -cooldown 5 10 -bookWait 10000');
+    console.log('  node joara_scraper.js 12345 -waitTime 3000 -cooldown 5 10');
     console.log('  node joara_scraper.js https://www.joara.com/book/6789 -help');
 }
 
@@ -27,16 +26,10 @@ async function handleCaptcha(page, browser, chapter) {
     const captchaCooldown = 120000; // 2 minutes cooldown
 
     while (captchaRetryCount < maxCaptchaRetries) {
-        let nonHeadlessBrowser;
         try {
-            // Check if there's an existing visible browser and close it
-            if (nonHeadlessBrowser && !nonHeadlessBrowser.isClosed()) {
-                await nonHeadlessBrowser.close();
-            }
-
             // Launch a new non-headless browser with a custom user data directory
             const customUserDataDir = './puppeteer_profile';
-            nonHeadlessBrowser = await puppeteer.launch({
+            const nonHeadlessBrowser = await puppeteer.launch({
                 headless: false,
                 userDataDir: customUserDataDir,
                 args: [
@@ -134,11 +127,6 @@ async function handleCaptcha(page, browser, chapter) {
             } else {
                 // Wait for a short cooldown before retrying
                 await new Promise((resolve) => setTimeout(resolve, 5000));
-            }
-        } finally {
-            // Ensure the non-headless browser is closed
-            if (nonHeadlessBrowser && !nonHeadlessBrowser.isClosed()) {
-                await nonHeadlessBrowser.close();
             }
         }
     }
@@ -374,12 +362,12 @@ async function scrapeBook(bookId, waitTime, cooldownChapters, cooldownMinutes) {
     }
 
     // Save the compiled text to a file
-    const txtFilename = `joara_${sanitizedBookName}_${sanitizedAuthorName}_${Date.now()}.txt`;
+    const txtFilename = `joara_${sanitizedBookName}_${sanitizedAuthorName}_chapters_${Date.now()}.txt`;
     fs.writeFileSync(txtFilename, compiledText, 'utf-8');
     console.log(`Text file saved as ${txtFilename}`);
 
     // Generate EPUB file
-    const epubFilename = `joara_${sanitizedBookName}_${sanitizedAuthorName}_${Date.now()}.epub`;
+    const epubFilename = `joara_${sanitizedBookName}_${sanitizedAuthorName}_chapters_${Date.now()}.epub`;
     const epubOptions = {
         title: bookName,
         author: authorName,
@@ -445,7 +433,6 @@ async function main() {
 
     // Parse wait time argument
     let waitTime = 5000; // Default wait time between chapters (5 seconds)
-    let bookWaitTime = 0; // Default wait time between books (0 seconds)
     let cooldownChapters, cooldownMinutes;
     const bookIds = [];
 
@@ -464,19 +451,6 @@ async function main() {
                     }
                 } else {
                     console.error('Missing value for -waitTime. Using default.');
-                }
-                break;
-            case '-bookWait':
-                const bookWaitTimeArg = args.shift();
-                if (bookWaitTimeArg !== undefined) {
-                    const bookWaitTimeValue = parseInt(bookWaitTimeArg, 10);
-                    if (!isNaN(bookWaitTimeValue) && bookWaitTimeValue >= 0) {
-                        bookWaitTime = bookWaitTimeValue; // in milliseconds
-                    } else {
-                        console.error('Invalid value for -bookWait. Using default.');
-                    }
-                } else {
-                    console.error('Missing value for -bookWait. Using default.');
                 }
                 break;
             case '-cooldown':
@@ -519,10 +493,6 @@ async function main() {
     // Scrape each book
     for (const bookId of bookIds) {
         await scrapeBook(bookId, waitTime, cooldownChapters, cooldownMinutes);
-        if (bookIds.indexOf(bookId) !== bookIds.length - 1 && bookWaitTime > 0) {
-            console.log(`Waiting ${bookWaitTime / 1000} seconds before scraping the next book...`);
-            await new Promise((resolve) => setTimeout(resolve, bookWaitTime));
-        }
     }
 }
 
