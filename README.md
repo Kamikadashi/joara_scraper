@@ -1,6 +1,6 @@
 # Joara Novel Scraper
 
-This script is a web scraper built with Puppeteer and Node.js that automatically downloads and compiles chapters from Joara novels into `.txt` and `.epub` formats. It includes options for custom wait times, cooldowns, CAPTCHA handling, and a new feature to wait between scraping multiple books.
+This script is a web scraper built with Puppeteer and Node.js that automatically downloads and compiles chapters from Joara novels into `.txt` and `.epub` formats. It includes options for custom wait times, cooldowns, CAPTCHA handling, and waits between scraping multiple books.
 
 ---
 
@@ -11,7 +11,7 @@ This script is a web scraper built with Puppeteer and Node.js that automatically
 - **Custom Wait Times**: Set a delay between chapter downloads.
 - **Cooldown**: Add a cooldown period after a specified number of chapters.
 - **Wait Between Books**: Specify a delay between scraping multiple books.
-- **CAPTCHA Handling**: Automatically prompts for manual CAPTCHA solving when detected and ensures leftover browser instances are closed properly.
+- **CAPTCHA Handling**: Automatically prompts for manual CAPTCHA solving when detected.
 
 ---
 
@@ -91,7 +91,6 @@ joara_BookName_AuthorName_<timestamp>.epub
 - Ensure you have a stable internet connection.
 - If CAPTCHA is detected, the script will prompt you to solve it manually in a non-headless browser.
 - Avoid excessive scraping to prevent being blocked by Joara.
-- The script now ensures leftover browser instances are properly closed during CAPTCHA retries.
 
 ---
 
