@@ -6,11 +6,12 @@ const Epub = require('epub-gen');
 function displayHelp() {
     console.log('Usage: node joara_scraper.js [options] <bookId1|url1> <bookId2|url2> ...');
     console.log('Options:');
-    console.log('  -waitTime <ms>        Wait time in milliseconds between chapters (default: 5000ms)');
-    console.log('  -cooldown <n> <m>     After every <n> chapters, cooldown for <m> minutes');
-    console.log('  -help                 Display this help message and exit');
+    console.log('  -waitTime <ms>          Wait time in milliseconds between chapters (default: 5000ms)');
+    console.log('  -bookWait <ms>  Wait time in milliseconds between books (default: 0ms)');
+    console.log('  -cooldown <n> <m>       After every <n> chapters, cooldown for <m> minutes');
+    console.log('  -help                   Display this help message and exit');
     console.log('Example:');
-    console.log('  node joara_scraper.js 12345 -waitTime 3000 -cooldown 5 10');
+    console.log('  node joara_scraper.js 12345 -waitTime 3000 -bookWait 60000 -cooldown 5 10');
     console.log('  node joara_scraper.js https://www.joara.com/book/6789 -help');
 }
 
@@ -362,12 +363,12 @@ async function scrapeBook(bookId, waitTime, cooldownChapters, cooldownMinutes) {
     }
 
     // Save the compiled text to a file
-    const txtFilename = `joara_${sanitizedBookName}_${sanitizedAuthorName}_chapters_${Date.now()}.txt`;
+    const txtFilename = `joara_${sanitizedBookName}_${sanitizedAuthorName}_${Date.now()}.txt`;
     fs.writeFileSync(txtFilename, compiledText, 'utf-8');
     console.log(`Text file saved as ${txtFilename}`);
 
     // Generate EPUB file
-    const epubFilename = `joara_${sanitizedBookName}_${sanitizedAuthorName}_chapters_${Date.now()}.epub`;
+    const epubFilename = `joara_${sanitizedBookName}_${sanitizedAuthorName}_${Date.now()}.epub`;
     const epubOptions = {
         title: bookName,
         author: authorName,
@@ -431,8 +432,9 @@ async function main() {
         return;
     }
 
-    // Parse wait time argument
+    // Parse wait time arguments
     let waitTime = 5000; // Default wait time between chapters (5 seconds)
+    let waitBetweenBooks = 0; // Default wait time between books (0 milliseconds)
     let cooldownChapters, cooldownMinutes;
     const bookIds = [];
 
@@ -451,6 +453,19 @@ async function main() {
                     }
                 } else {
                     console.error('Missing value for -waitTime. Using default.');
+                }
+                break;
+            case '-bookWait':
+                const waitBetweenBooksArg = args.shift();
+                if (waitBetweenBooksArg !== undefined) {
+                    const waitBetweenBooksValue = parseInt(waitBetweenBooksArg, 10);
+                    if (!isNaN(waitBetweenBooksValue) && waitBetweenBooksValue >= 0) {
+                        waitBetweenBooks = waitBetweenBooksValue; // in milliseconds
+                    } else {
+                        console.error('Invalid value for -bookWait. Using default.');
+                    }
+                } else {
+                    console.error('Missing value for -bookWait. Using default.');
                 }
                 break;
             case '-cooldown':
@@ -493,6 +508,11 @@ async function main() {
     // Scrape each book
     for (const bookId of bookIds) {
         await scrapeBook(bookId, waitTime, cooldownChapters, cooldownMinutes);
+
+        if (waitBetweenBooks > 0) {
+            console.log(`Waiting ${waitBetweenBooks / 1000} seconds before starting the next book...`);
+            await new Promise((resolve) => setTimeout(resolve, waitBetweenBooks));
+        }
     }
 }
 
